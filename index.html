@@ -1,9 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Web Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Local AI Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f4f4f9; }
+        #chatbox { height: 300px; border: 1px solid #ccc; background: white; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .user { color: blue; text-align: right; margin: 5px 0; }
+        .ai { color: green; text-align: left; margin: 5px 0; }
+        #input-area { display: flex; }
+        input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px 0 0 5px; }
+        button { padding: 10px; background: green; color: white; border: none; border-radius: 0 5px 5px 0; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <h1>Hello World</h1>
+
+    <h2>Tiny AI Chat</h2>
+    <div id="chatbox"></div>
+    <div id="input-area">
+        <input type="text" id="userInput" placeholder="Ask your local AI...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        // CHANGE THIS URL TO YOUR CLOUDFLARE TUNNEL SUBDOMAIN URL
+        const AI_URL = "https://yourdomain.com"; 
+
+        async function sendMessage() {
+            const inputField = document.getElementById("userInput");
+            const chatbox = document.getElementById("chatbox");
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            // Display user message
+            chatbox.innerHTML += `<div class="user"><b>You:</b> ${text}</div>`;
+            inputField.value = "";
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            // Display loading state
+            const aiMessageId = "ai-" + Date.now();
+            chatbox.innerHTML += `<div class="ai" id="${aiMessageId}"><b>AI:</b> Thinking...</div>`;
+
+            try {
+                const response = await fetch(AI_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama3.2", // Make sure this matches your Docker model!
+                        prompt: text,
+                        stream: false
+                    })
+                });
+                const data = await response.json();
+                document.getElementById(aiMessageId).innerHTML = `<b>AI:</b> ${data.response}`;
+            } catch (error) {
+                document.getElementById(aiMessageId).innerHTML = `<b>AI:</b> Error connecting to local model.`;
+                console.error(error);
+            }
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
 </body>
 </html>
